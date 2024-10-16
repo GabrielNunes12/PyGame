@@ -58,7 +58,7 @@ class World:
         )
         section_surface.fill(color)
 
-        # Optionally, add more details like images or obstacles here
+        # TODO: add more images to be obstacle here
 
         return section_surface
 
