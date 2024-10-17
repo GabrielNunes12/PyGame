@@ -1,7 +1,7 @@
-
 import pygame
 import os
-
+#How to import the Collectible class from the collectible.py file
+from Entities.Collectible import Collectible
 class World:
     def __init__(self, world_width, world_height, section_size, assets_path):
         """
@@ -40,6 +40,10 @@ class World:
                 )
                 self.platforms.append(platform_rect)
 
+        # Adding collectibles
+        self.collectibles = []
+        self.add_collectibles()
+
     def load_section(self, x, y):
         """
         Loads a section of the world. For simplicity, we'll fill sections with different colors.
@@ -61,6 +65,21 @@ class World:
         # TODO: add more images to be obstacle here
 
         return section_surface
+
+    def add_collectibles(self):
+        """
+        Adds collectibles to various sections of the world.
+        """
+        collectible_image_path = os.path.join(self.assets_path, 'images', 'coins.png')
+        # Example: Add collectibles to different sections
+        for (x, y), section in self.sections.items():
+            # Define positions within each section to place collectibles
+            if (x, y) == (0, 0):
+                self.collectibles.append(Collectible(x * self.section_size[0] + 100, y * self.section_size[1] + 400, image_path=collectible_image_path))
+            elif (x, y) == (1, 1):
+                self.collectibles.append(Collectible(x * self.section_size[0] + 300, y * self.section_size[1] + 300, image_path=collectible_image_path))
+            elif (x, y) == (2, 2):
+                self.collectibles.append(Collectible(x * self.section_size[0] + 500, y * self.section_size[1] + 200, image_path=collectible_image_path))
 
     def draw(self, screen, camera_offset):
         """
@@ -92,3 +111,7 @@ class World:
             screen_x = platform.x - camera_offset[0]
             screen_y = platform.y - camera_offset[1]
             pygame.draw.rect(screen, (255, 0, 0), (screen_x, screen_y, platform.width, platform.height))
+
+        # Draw collectibles
+        for collectible in self.collectibles:
+            collectible.draw(screen, camera_offset)
