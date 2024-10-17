@@ -8,8 +8,8 @@ from camera import Camera
 
 class GameEngine:
     def __init__(self):
-        self.screen_width = 1920
-        self.screen_height = 1080
+        self.screen_width = 1280
+        self.screen_height = 720
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Meu Jogo PyGame")
         self.clock = pygame.time.Clock()
@@ -19,7 +19,7 @@ class GameEngine:
         self.ui = UI(self.screen)
 
         # Initialize world
-        section_size = (800, 600)  # Each section is the size of the screen
+        section_size = (1280, 720)  # Each section is the size of the screen
         world_width = 3  # 3 sections horizontally
         world_height = 3  # 3 sections vertically
         assets_path = 'assets'  # Path to assets
@@ -95,6 +95,6 @@ class GameEngine:
         self.player.draw(self.screen, self.camera.offset)
 
         # Draw UI
-        self.ui.draw_text("Pressione Fechar para Sair", 10, 10)
+        self.ui.draw_text("Beta version ", 5, 5)
 
         pygame.display.flip()
