@@ -6,7 +6,8 @@ class Player:
         self.rect = pygame.Rect(x, y, width, height)
         self.color = color
         self.velocity = pygame.math.Vector2(0, 0)
-        self.speed = 5
+        self.speed = 4
+        self.friction = 2
         self.jump_strength = 15
         self.on_ground = False
 
@@ -34,6 +35,16 @@ class Player:
         self.velocity.y += gravity
 
     def update(self, physics):
+         # Apply friction
+        self.velocity.x += self.velocity.x * self.friction
+
+        # Clamp the horizontal velocity
+        if self.velocity.x > self.speed:
+            self.velocity.x = self.speed
+        elif self.velocity.x <= -self.speed:
+            self.velocity.x = -self.speed
+
+        # Apply movement
         self.rect.x += self.velocity.x
         physics.apply_gravity({'velocity_y': self.velocity.y, 'y': self.rect.y})
         self.rect.y += self.velocity.y
