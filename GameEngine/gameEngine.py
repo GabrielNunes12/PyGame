@@ -1,11 +1,14 @@
+import sys
+from os import path
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
 import pygame
 # import physics class from Physics folder
-from physics import PhysicsEngine
+from physics.physics_engine import PhysicsEngine
 from UI import UI
 from Entities.Player import Player
 from World.world import World
 from camera import Camera
-from os import path
 
 class GameEngine:
     def __init__(self):
@@ -75,6 +78,7 @@ class GameEngine:
             self.player.rect.bottom = self.world.total_height - 10
             self.player.velocity.y = 0
             self.player.on_ground = True
+            self.player.jump_count = 0  # Reseta o contador de pulos
         else:
             self.player.on_ground = False
 
@@ -85,6 +89,7 @@ class GameEngine:
                     self.player.rect.bottom = platform.top
                     self.player.velocity.y = 0
                     self.player.on_ground = True
+                    self.player.jump_count = 0  # Reseta o contador de pulos quando tocar na plataforma
 
         # Collectible collision
         for collectible in self.world.collectibles:
