@@ -9,12 +9,20 @@ from UI import UI
 from Entities.Player import Player
 from World.world import World
 from camera import Camera
+from game.sound_manager import SoundManager
 
 class GameEngine:
     def __init__(self):
-        self.screen_width = 1280
-        self.screen_height = 720
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        
+        # Obtém informações do display
+        info = pygame.display.Info()
+        self.screen_width = info.current_w
+        self.screen_height = info.current_h
+        
+        # Configura o display em tela cheia
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), 
+                                            pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        
         pygame.display.set_caption("Collect all items")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -24,24 +32,27 @@ class GameEngine:
         self.ui = UI(self.screen)
 
         # Initialize world
-        section_size = (1280, 720)  # Each section is the size of the screen
-        world_width = 3  # 3 sections horizontally
-        world_height = 3  # 3 sections vertically
-        assets_path = 'assets'  # Path to assets
+        section_size = (self.screen_width, self.screen_height)
+        world_width = 3
+        world_height = 3
+        assets_path = 'assets'
         self.world = World(world_width, world_height, section_size, assets_path)
+        sound_manager = SoundManager()
+        sound_manager.play_background_music("assets/music/background_theme.mp3", volume=0.3)
 
         # Calculate total world size in pixels
-        self.world_pixel_width = world_width * section_size[0]  # 2400
-        self.world_pixel_height = world_height * section_size[1]  # 1800
+        self.world_pixel_width = world_width * section_size[0]
+        self.world_pixel_height = world_height * section_size[1]
 
         # Initialize camera
-        self.camera = Camera(self.screen_width, self.screen_height, self.world_pixel_width, self.world_pixel_height)
+        self.camera = Camera(self.screen_width, self.screen_height, 
+                           self.world_pixel_width, self.world_pixel_height)
 
         # Initialize player
-        player_width = 50
-        player_height = 50
-        player_x = self.world_pixel_width // 2 - player_width // 2  # 1175
-        player_y = self.world_pixel_height // 2 - player_height // 2  # 875
+        player_width = int(self.screen_width * 0.039)  # ~4% da largura da tela
+        player_height = int(self.screen_height * 0.069)  # ~7% da altura da tela
+        player_x = self.world_pixel_width // 2 - player_width // 2
+        player_y = self.world_pixel_height // 2 - player_height // 2
         self.player = Player(player_x, player_y, player_width, player_height)
 
         # Initialize score
@@ -66,6 +77,20 @@ class GameEngine:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Adiciona opção de sair com ESC
+                    self.running = False
+                elif event.key == pygame.K_F11:   # Adiciona toggle fullscreen com F11
+                    self.toggle_fullscreen()
+
+    def toggle_fullscreen(self):
+        """Alterna entre tela cheia e modo janela"""
+        is_fullscreen = bool(pygame.display.get_surface().get_flags() & pygame.FULLSCREEN)
+        if is_fullscreen:
+            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        else:
+            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), 
+                                                pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
 
     def update(self):
         keys_pressed = pygame.key.get_pressed()

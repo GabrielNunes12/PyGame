@@ -14,20 +14,23 @@ class Player:
         self.jump_count = 0
         self.max_jumps = 2
         self.is_jumping = False
+        self.facing_right = True
         
         # Novo: variáveis para controle do cooldown
         self.double_jump_available = True
         self.last_double_jump_time = 0
         self.double_jump_cooldown = 3  # 3 segundos de cooldown
 
-        # Load player sprite
+        # Modificar o carregamento do sprite para guardar a imagem original
         sprite_path = os.path.join('assets', 'images', 'player.png')
         try:
-            self.image = pygame.image.load(sprite_path).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (width, height))
+            self.original_image = pygame.image.load(sprite_path).convert_alpha()
+            self.original_image = pygame.transform.scale(self.original_image, (width, height))
+            self.image = self.original_image
         except pygame.error or FileNotFoundError:
             print(f"Unable to load sprite image at {sprite_path}. Using rectangle instead.")
             self.image = None
+            self.original_image = None
 
     def handle_input(self, keys_pressed):
         self.velocity.x = 0
@@ -40,9 +43,15 @@ class Player:
 
         if keys_pressed[pygame.K_LEFT] or keys_pressed[pygame.K_a]:
             self.velocity.x -= self.speed
+            if self.facing_right and self.image:  # Flip apenas se estiver virado para direita
+                self.facing_right = False
+                self.image = pygame.transform.flip(self.original_image, True, False)
+                
         if keys_pressed[pygame.K_RIGHT] or keys_pressed[pygame.K_d]:
             self.velocity.x += self.speed
-            
+            if not self.facing_right and self.image:  # Flip apenas se estiver virado para esquerda
+                self.facing_right = True
+                self.image = pygame.transform.flip(self.image, True, False)
         # Lógica de pulo modificada
         if (keys_pressed[pygame.K_SPACE] or keys_pressed[pygame.K_w] or keys_pressed[pygame.K_UP]) and not self.is_jumping:
             # Só permite pular se o double jump estiver disponível
