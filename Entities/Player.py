@@ -1,6 +1,7 @@
 import pygame
 import os
 import time  # Novo: para controlar o cooldown
+from .Animation import Animation
 
 class Player:
     def __init__(self, x, y, width, height, color=(0, 255, 0)):
@@ -15,6 +16,8 @@ class Player:
         self.max_jumps = 2
         self.is_jumping = False
         self.facing_right = True
+        self.animation = Animation()
+        self.load_animations(width, height)
         
         # Novo: variáveis para controle do cooldown
         self.double_jump_available = True
@@ -71,6 +74,22 @@ class Player:
         elif not (keys_pressed[pygame.K_SPACE] or keys_pressed[pygame.K_w] or keys_pressed[pygame.K_UP]):
             self.is_jumping = False
 
+        # Atualiza animações baseado no estado
+        if self.velocity.x != 0:
+            self.animation.play("run")
+        elif self.velocity.y < 0:
+            self.animation.play("jump")
+        elif self.velocity.y > 0:
+            self.animation.play("fall")
+        else:
+            self.animation.play("idle")
+        # Atualiza a direção do sprite
+        if self.velocity.x > 0:
+            self.animation.facing_right = True
+        elif self.velocity.x < 0:
+            self.animation.facing_right = False
+
+
     def apply_gravity(self, gravity):
         self.velocity.y += gravity
 
@@ -89,12 +108,15 @@ class Player:
         physics.apply_gravity({'velocity_y': self.velocity.y, 'y': self.rect.y})
         self.rect.y += self.velocity.y
 
+        self.animation.update()
+
     def draw(self, screen, camera_offset):
         screen_x = self.rect.x - camera_offset[0]
         screen_y = self.rect.y - camera_offset[1]
 
-        if self.image:
-            screen.blit(self.image, (screen_x, screen_y))
+        current_frame = self.animation.get_current_frame()
+        if current_frame:
+            screen.blit(current_frame, (screen_x, screen_y))
         else:
             pygame.draw.rect(screen, self.color, (screen_x, screen_y, self.rect.width, self.rect.height))
         
@@ -107,3 +129,23 @@ class Player:
                 font = pygame.font.Font(None, 24)
                 text_surface = font.render(cooldown_text, True, (255, 255, 255))
                 screen.blit(text_surface, (screen_x, screen_y - 20))
+
+    def load_animations(self, width, height):
+        """Carrega todas as animações do player"""
+        animations_data = {
+            "idle": 4,      # 4 frames de idle
+            "run": 6,       # 6 frames de corrida
+            "jump": 2,      # 2 frames de pulo
+            "fall": 2,      # 2 frames de queda
+            "attack": 4     # 4 frames de ataque
+        }
+        
+        for anim_name, frame_count in animations_data.items():
+            self.animation.load_animation(
+                anim_name,
+                os.path.join('assets', 'sprites', 'player'),
+                frame_count
+            )
+            # Redimensiona todos os frames da animação
+            for frame in self.animation.animations[anim_name]:
+                pygame.transform.scale(frame, (width, height))
