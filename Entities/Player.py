@@ -133,19 +133,30 @@ class Player:
     def load_animations(self, width, height):
         """Carrega todas as animações do player"""
         animations_data = {
-            "idle": 4,      # 4 frames de idle
-            "run": 6,       # 6 frames de corrida
-            "jump": 2,      # 2 frames de pulo
-            "fall": 2,      # 2 frames de queda
-            "attack": 4     # 4 frames de ataque
+            "idle": 2,      # Reduzindo para 2 frames inicialmente
+            "run": 2,       # Reduzindo para 2 frames
+            "jump": 2,
+            "fall": 2,
+            "attack": 4
         }
+        
+        # Certifique-se de que o diretório existe
+        sprite_dir = os.path.join('assets', 'sprites', 'player')
+        if not os.path.exists(sprite_dir):
+            os.makedirs(sprite_dir)
+            print(f"Criado diretório: {sprite_dir}")
         
         for anim_name, frame_count in animations_data.items():
             self.animation.load_animation(
                 anim_name,
-                os.path.join('assets', 'sprites', 'player'),
+                sprite_dir,
                 frame_count
             )
-            # Redimensiona todos os frames da animação
-            for frame in self.animation.animations[anim_name]:
-                pygame.transform.scale(frame, (width, height))
+            
+            # Verifica se a animação foi carregada e tem frames
+            if anim_name in self.animation.animations:
+                # Redimensiona todos os frames da animação
+                self.animation.animations[anim_name] = [
+                    pygame.transform.scale(frame, (width, height))
+                    for frame in self.animation.animations[anim_name]
+                ]
