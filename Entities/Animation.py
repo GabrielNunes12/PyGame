@@ -19,8 +19,12 @@ class Animation:
             try:
                 image = pygame.image.load(frame_path).convert_alpha()
                 self.animations[name].append(image)
-            except:
+            except (pygame.error, FileNotFoundError) as e:
                 print(f"Erro ao carregar frame: {frame_path}")
+                # Adiciona uma superfície roxa como fallback
+                fallback = pygame.Surface((32, 32), pygame.SRCALPHA)
+                fallback.fill((255, 0, 255))  # Cor roxa para debug
+                self.animations[name].append(fallback)
 
     def play(self, animation_name, force=False):
         """Inicia uma animação"""
@@ -43,9 +47,24 @@ class Animation:
 
     def get_current_frame(self):
         """Retorna o frame atual da animação"""
-        if self.current_animation in self.animations:
-            frame = self.animations[self.current_animation][self.current_frame]
-            if not self.facing_right:
-                frame = pygame.transform.flip(frame, True, False)
-            return frame
-        return None 
+        if not self.animations:  # Se não há animações carregadas
+            fallback = pygame.Surface((32, 32), pygame.SRCALPHA)
+            fallback.fill((255, 0, 255))  # Cor roxa para debug
+            return fallback
+            
+        if self.current_animation not in self.animations:
+            self.current_animation = list(self.animations.keys())[0]
+            
+        frames = self.animations[self.current_animation]
+        if not frames:  # Se a animação atual não tem frames
+            fallback = pygame.Surface((32, 32), pygame.SRCALPHA)
+            fallback.fill((255, 0, 255))  # Cor roxa para debug
+            return fallback
+            
+        # Garante que o frame atual está dentro dos limites
+        self.current_frame = self.current_frame % len(frames)
+        
+        frame = frames[self.current_frame]
+        if not self.facing_right:
+            frame = pygame.transform.flip(frame, True, False)
+        return frame 

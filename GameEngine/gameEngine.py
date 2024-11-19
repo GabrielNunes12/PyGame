@@ -38,7 +38,7 @@ class GameEngine:
         assets_path = 'assets'
         self.world = World(world_width, world_height, section_size, assets_path)
         sound_manager = SoundManager()
-        sound_manager.play_background_music("assets/music/background_theme.mp3", volume=0.3)
+        sound_manager.play_background_music("assets/music/background_theme.mp3", volume=0.2)
 
         # Calculate total world size in pixels
         self.world_pixel_width = world_width * section_size[0]
@@ -94,10 +94,9 @@ class GameEngine:
 
     def update(self):
         keys_pressed = pygame.key.get_pressed()
-        self.player.handle_input(keys_pressed)
+        self.player.handle_input(keys_pressed, self.camera.offset)  # Passa o offset da câmera
         self.player.apply_gravity(self.physics.gravity)
         self.player.update(self.physics)
-
         # Ground collision
         if self.player.rect.bottom >= self.world.total_height - 10:
             self.player.rect.bottom = self.world.total_height - 10
@@ -123,7 +122,6 @@ class GameEngine:
                 self.score += 1  # Increment score
                 if self.collect_sound:
                     self.collect_sound.play()
-
         # Left boundary
         if self.player.rect.left <= 0:
             self.player.rect.left = 0
