@@ -2,6 +2,8 @@ import pygame
 import os
 import time  # Novo: para controlar o cooldown
 from .Animation import Animation
+import math
+from .Particle import Particle  # Nova classe que vamos criar
 
 class Player:
     def __init__(self, x, y, width, height, color=(0, 255, 0)):
@@ -18,6 +20,12 @@ class Player:
         self.facing_right = True
         self.animation = Animation()
         self.load_animations(width, height)
+        self.attacking = False
+        self.attack_cooldown = 0.5  # segundos
+        self.last_attack_time = 0
+        self.attack_particles = []
+        self.attack_damage = 50  # Dano base
+        self.attack_range = 300  # Alcance máximo do ataque
         
         # Novo: variáveis para controle do cooldown
         self.double_jump_available = True
@@ -35,7 +43,36 @@ class Player:
             self.image = None
             self.original_image = None
 
-    def handle_input(self, keys_pressed):
+    def attack(self, camera_offset=(0,0)):
+        """Inicia um ataque"""
+        self.attacking = True
+        # Pega a posição do mouse
+        mouse_pos = pygame.mouse.get_pos()
+        # Converte para coordenadas do mundo
+        world_mouse_pos = (
+            mouse_pos[0] + camera_offset[0],
+            mouse_pos[1] + camera_offset[1]
+        )
+        
+        # Calcula direção do ataque
+        direction = pygame.math.Vector2(
+            world_mouse_pos[0] - self.rect.centerx,
+            world_mouse_pos[1] - self.rect.centery
+        )
+        if direction.length() > 0:
+            direction = direction.normalize()
+            
+        # Cria partícula de ataque
+        particle = Particle(
+            self.rect.centerx,
+            self.rect.centery,
+            direction,
+            self.attack_range
+        )
+        self.attack_particles.append(particle)
+
+
+    def handle_input(self, keys_pressed, camera_offset=(0,0)):
         self.velocity.x = 0
 
         # Verifica o cooldown do double jump
@@ -73,6 +110,13 @@ class Player:
                 
         elif not (keys_pressed[pygame.K_SPACE] or keys_pressed[pygame.K_w] or keys_pressed[pygame.K_UP]):
             self.is_jumping = False
+        mouse_buttons = pygame.mouse.get_pressed()
+        current_time = time.time()
+        
+        if mouse_buttons[0] and current_time - self.last_attack_time >= self.attack_cooldown:  # Botão esquerdo
+            self.attack(camera_offset)
+            self.last_attack_time = current_time
+
 
         # Atualiza animações baseado no estado
         if self.velocity.x != 0:
@@ -93,7 +137,14 @@ class Player:
     def apply_gravity(self, gravity):
         self.velocity.y += gravity
 
-    def update(self, physics):
+    def calculate_damage(self, distance):
+        """Calcula dano baseado na distância"""
+        # Quanto mais perto, mais dano (linear falloff)
+        damage_multiplier = 1 - (distance / self.attack_range)
+        return max(self.attack_damage * damage_multiplier, 10)  # Mínimo de 10 de dano
+
+
+    def update(self, physics, enemies = []):
         # Apply friction
         self.velocity.x += self.velocity.x * self.friction
 
@@ -108,6 +159,31 @@ class Player:
         physics.apply_gravity({'velocity_y': self.velocity.y, 'y': self.rect.y})
         self.rect.y += self.velocity.y
 
+         # Atualiza partículas e verifica colisões
+        for particle in self.attack_particles[:]:  # Copia a lista para evitar problemas de modificação
+            particle.update()
+            
+            # Remove partículas que atingiram seu alcance máximo
+            if particle.distance_traveled >= particle.max_distance:
+                self.attack_particles.remove(particle)
+                continue
+                
+            # Verifica colisão com inimigos
+            for enemy in enemies:
+                if particle.rect.colliderect(enemy.rect):
+                    # Calcula distância entre player e inimigo
+                    distance = math.hypot(
+                        enemy.rect.centerx - self.rect.centerx,
+                        enemy.rect.centery - self.rect.centery
+                    )
+                    
+                    # Aplica dano baseado na distância
+                    damage = self.calculate_damage(distance)
+                    enemy.take_damage(damage)
+                    
+                    # Remove a partícula após atingir
+                    self.attack_particles.remove(particle)
+                    break
         self.animation.update()
 
     def draw(self, screen, camera_offset):
@@ -119,7 +195,9 @@ class Player:
             screen.blit(current_frame, (screen_x, screen_y))
         else:
             pygame.draw.rect(screen, self.color, (screen_x, screen_y, self.rect.width, self.rect.height))
-        
+        # Desenha partículas de ataque
+        for particle in self.attack_particles:
+            particle.draw(screen, camera_offset)
         # Novo: Desenhar indicador de cooldown do double jump
         if not self.double_jump_available:
             current_time = time.time()
@@ -137,7 +215,7 @@ class Player:
             "run": 2,       # Reduzindo para 2 frames
             "jump": 2,
             "fall": 2,
-            "attack": 4
+            "attack": 2
         }
         
         # Certifique-se de que o diretório existe
